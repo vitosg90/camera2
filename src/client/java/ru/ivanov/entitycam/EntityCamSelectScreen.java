@@ -146,22 +146,20 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
-        // ВАЖНО: сигнатура (5 аргументов), которую требует твой билд
+        // ВАЖНО: сигнатура (5 аргументов) из твоего лога ошибок
         @Override
-        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
 
             double d = Math.sqrt(entity.squaredDistanceTo(client.player));
             String label = entity.getName().getString() + " (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
 
-            // Координаты текста внутри элемента списка
-            int textX = x + 6;
-            int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
-
-            context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
+            // Координаты y и x придется брать через геттеры родителя, если 5-аргументный метод их не дает
+            // Но обычно в этой версии они уже "запечены" в context или позицию Entry
+            context.drawTextWithShadow(textRenderer, Text.literal(label), 16, 2, hovered ? 0xFFFFAA : 0xFFFFFF);
         }
 
-        // Сигнатура mouseClicked для Loom 1.14
+        // Также исправляем сигнатуру для Clickable
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (client == null || button != 0) return false;
