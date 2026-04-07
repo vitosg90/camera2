@@ -100,4 +100,79 @@ public final class EntityCamSelectScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderInGameBackground(context);
+        super.render(context, mouseX, mouseY, delta);
+
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 6, 0xFFFFFF);
+
+        if (client != null && client.player != null) {
+            Text hint = Text.literal("Click an entry to switch camera. Radius: " + SEARCH_RADIUS_BLOCKS + " blocks")
+                .formatted(Formatting.GRAY);
+            context.drawTextWithShadow(textRenderer, hint, 10, 44, 0xFFFFFF);
+
+            Text countLine = lastEntityCount == 0
+                ? Text.literal("No other entities in range. Try Refresh or move closer.").formatted(Formatting.YELLOW)
+                : Text.literal("Entities: " + lastEntityCount).formatted(Formatting.GRAY);
+            context.drawTextWithShadow(textRenderer, countLine, 10, 56, 0xFFFFFF);
+        }
+    }
+
+    private final class EntityList extends ElementListWidget<EntityEntry> {
+        private EntityList(MinecraftClient client, int width, int height, int y, int itemHeight) {
+            super(client, width, height, y, itemHeight);
+        }
+
+        void setEntities(List<Entity> entities) {
+            clearEntries();
+            for (Entity e : entities) {
+                addEntry(new EntityEntry(e));
+            }
+        }
+    }
+
+    private final class EntityEntry extends ElementListWidget.Entry<EntityEntry> {
+        private final Entity entity;
+
+        private EntityEntry(Entity entity) {
+            this.entity = entity;
+        }
+
+        @Override
+        public List<? extends net.minecraft.client.gui.Element> children() {
+            return List.of();
+        }
+
+        @Override
+        public List<net.minecraft.client.gui.Selectable> selectableChildren() {
+            return List.of();
+        }
+
+        // Сигнатура под твои маппинги (5 аргументов)
+        @Override
+        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+            if (client == null || client.player == null) return;
+
+            double d = Math.sqrt(entity.squaredDistanceTo(client.player));
+            String label = entity.getName().getString() + "  (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
+
+            int textX = x + 6;
+            int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
+
+            context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (client == null) return false;
+            if (button != 0) return false;
+
+            if (entity.isAlive()) {
+                client.setCameraEntity(entity);
+                close();
+                return true;
+            }
+            return false;
+        }
+    }
+}
