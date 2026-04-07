@@ -131,7 +131,7 @@ public final class EntityCamSelectScreen extends Screen {
         }
     }
 
-    private final class EntityEntry extends ElementListWidget.Entry<EntityEntry> {
+   private final class EntityEntry extends ElementListWidget.Entry<EntityEntry> {
         private final Entity entity;
 
         private EntityEntry(Entity entity) {
@@ -148,6 +148,7 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
+        // Исправленная сигнатура render для твоих маппингов
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
@@ -161,6 +162,7 @@ public final class EntityCamSelectScreen extends Screen {
             context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
         }
 
+        // Исправленная сигнатура mouseClicked для твоих маппингов
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (client == null) return false;
@@ -174,4 +176,3 @@ public final class EntityCamSelectScreen extends Screen {
             return false;
         }
     }
-}
