@@ -148,6 +148,9 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
+        // Исправленная сигнатура render согласно логу: (DrawContext, int, int, boolean, float)
+        // Но так как это Entry внутри списка, нам нужны координаты X и Y.
+        // В твоей версии они обычно получаются через index или доп. параметры.
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
