@@ -146,8 +146,7 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
-        // Исправлено под твой лог: (DrawContext, int, int, boolean, float)
-        // В этой версии маппингов координаты X и Y обычно не передаются в метод напрямую
+        // ВАЖНО: сигнатура (5 аргументов), которую требует твой билд
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
@@ -155,13 +154,14 @@ public final class EntityCamSelectScreen extends Screen {
             double d = Math.sqrt(entity.squaredDistanceTo(client.player));
             String label = entity.getName().getString() + " (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
 
+            // Координаты текста внутри элемента списка
             int textX = x + 6;
             int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
 
             context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
         }
 
-        // Исправленная сигнатура mouseClicked для твоих маппингов
+        // Сигнатура mouseClicked для Loom 1.14
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (client == null || button != 0) return false;
