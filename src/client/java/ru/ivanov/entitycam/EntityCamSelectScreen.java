@@ -101,9 +101,7 @@ public final class EntityCamSelectScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderInGameBackground(context);
         super.render(context, mouseX, mouseY, delta);
-
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 6, 0xFFFFFF);
 
         if (client != null && client.player != null) {
@@ -148,7 +146,7 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
-        // Сигнатура под твои маппинги (5 аргументов)
+        // Сигнатура render в точности как требует ошибка: (DrawContext, int, int, boolean, float)
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
@@ -164,8 +162,7 @@ public final class EntityCamSelectScreen extends Screen {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (client == null) return false;
-            if (button != 0) return false;
+            if (client == null || button != 0) return false;
 
             if (entity.isAlive()) {
                 client.setCameraEntity(entity);
