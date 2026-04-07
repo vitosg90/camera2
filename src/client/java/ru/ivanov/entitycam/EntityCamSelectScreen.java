@@ -147,6 +147,7 @@ public final class EntityCamSelectScreen extends Screen {
         }
 
         // Исправлено под твой лог: (DrawContext, int, int, boolean, float)
+        // В этой версии маппингов координаты X и Y обычно не передаются в метод напрямую
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
@@ -160,7 +161,7 @@ public final class EntityCamSelectScreen extends Screen {
             context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
         }
 
-        // Исправлено под маппинги Loom 1.14
+        // Исправленная сигнатура mouseClicked для твоих маппингов
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (client == null || button != 0) return false;
