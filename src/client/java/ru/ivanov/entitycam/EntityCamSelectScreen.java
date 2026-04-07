@@ -146,13 +146,13 @@ public final class EntityCamSelectScreen extends Screen {
             return List.of();
         }
 
-        // Сигнатура render в точности как требует ошибка: (DrawContext, int, int, boolean, float)
+        // Исправлено под твой лог: (DrawContext, int, int, boolean, float)
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             if (client == null || client.player == null) return;
 
             double d = Math.sqrt(entity.squaredDistanceTo(client.player));
-            String label = entity.getName().getString() + "  (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
+            String label = entity.getName().getString() + " (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
 
             int textX = x + 6;
             int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
@@ -160,6 +160,7 @@ public final class EntityCamSelectScreen extends Screen {
             context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
         }
 
+        // Исправлено под маппинги Loom 1.14
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (client == null || button != 0) return false;
