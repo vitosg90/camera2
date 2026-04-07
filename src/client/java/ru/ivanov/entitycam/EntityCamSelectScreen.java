@@ -1,48 +1,177 @@
-private final class EntityEntry extends ElementListWidget.Entry<EntityEntry> {
-		private final Entity entity;
+package ru.ivanov.entitycam;
 
-		private EntityEntry(Entity entity) {
-			this.entity = entity;
-		}
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ElementListWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.entity.Entity;
+import net.minecraft.registry.Registries;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 
-		@Override
-		public List<? extends net.minecraft.client.gui.Element> children() {
-			return List.of();
-		}
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
-		@Override
-		public List<net.minecraft.client.gui.Selectable> selectableChildren() {
-			return List.of();
-		}
+public final class EntityCamSelectScreen extends Screen {
+    private static final int SEARCH_RADIUS_BLOCKS = 64;
+    private static final int ITEM_HEIGHT = 22;
 
-		// В 1.21.1 у метода render другие параметры (добавлены index, y, x и размеры)
-		@Override
-		public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-			if (client == null || client.player == null) return;
+    private TextFieldWidget filter;
+    private EntityList list;
+    private int lastEntityCount;
 
-			double d = Math.sqrt(entity.squaredDistanceTo(client.player));
-			String label = entity.getName().getString() + "  (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
+    public EntityCamSelectScreen() {
+        super(Text.literal("EntityCam"));
+    }
 
-			// Используем координаты x и y, которые передает сам список для этой строки
-			int textX = x + 6;
-			int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
+    @Override
+    protected void init() {
+        int top = 20;
 
-			context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
-		}
+        filter = new TextFieldWidget(textRenderer, 10, top, width - 20, 20, Text.literal("Filter"));
+        filter.setChangedListener(ignored -> refresh());
+        addDrawableChild(filter);
 
-		// В 1.21.1 mouseClicked принимает координаты double и код кнопки int
-		@Override
-		public boolean mouseClicked(double mouseX, double mouseY, int button) {
-			if (client == null) return false;
-			
-			// 0 — это левая кнопка мыши
-			if (button != 0) return false;
+        int listTop = top + 24 + 28;
+        int listHeight = height - listTop - 40;
 
-			if (entity.isAlive()) {
-				client.setCameraEntity(entity);
-				close();
-				return true;
-			}
-			return false;
-		}
-	}
+        list = new EntityList(client, width - 20, listHeight, listTop, ITEM_HEIGHT);
+        list.setX(10);
+        addDrawableChild(list);
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("Refresh"), b -> refresh())
+            .dimensions(10, height - 30, 90, 20)
+            .build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("Back to you"), b -> {
+            if (client != null && client.player != null) client.setCameraEntity(client.player);
+            close();
+        }).dimensions(110, height - 30, 110, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("Close"), b -> close())
+            .dimensions(width - 100, height - 30, 90, 20)
+            .build());
+
+        refresh();
+    }
+
+    private void refresh() {
+        if (client == null || client.player == null || client.world == null) return;
+
+        String q = filter.getText() == null ? "" : filter.getText().trim().toLowerCase(Locale.ROOT);
+
+        Box box = client.player.getBoundingBox().expand(SEARCH_RADIUS_BLOCKS);
+        List<Entity> entities = client.world.getOtherEntities(client.player, box, e -> e != null && e.isAlive());
+        entities.sort(Comparator.comparingDouble(e -> e.squaredDistanceTo(client.player)));
+
+        List<Entity> filtered = new ArrayList<>(entities.size());
+        for (Entity e : entities) {
+            if (entityMatchesFilter(e, q)) filtered.add(e);
+        }
+
+        lastEntityCount = filtered.size();
+        list.setEntities(filtered);
+    }
+
+    private static boolean entityMatchesFilter(Entity e, String q) {
+        if (q.isEmpty()) return true;
+
+        String name = e.getName().getString().toLowerCase(Locale.ROOT);
+        if (name.contains(q)) return true;
+
+        String typeStr = e.getType().toString().toLowerCase(Locale.ROOT);
+        if (typeStr.contains(q)) return true;
+
+        Identifier id = Registries.ENTITY_TYPE.getId(e.getType());
+        if (id != null) {
+            String idFull = id.toString().toLowerCase(Locale.ROOT);
+            String path = id.getPath().toLowerCase(Locale.ROOT);
+            if (idFull.contains(q) || path.contains(q)) return true;
+        }
+
+        String transKey = e.getType().getTranslationKey().toLowerCase(Locale.ROOT);
+        return transKey.contains(q);
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderInGameBackground(context);
+        super.render(context, mouseX, mouseY, delta);
+
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 6, 0xFFFFFF);
+
+        if (client != null && client.player != null) {
+            Text hint = Text.literal("Click an entry to switch camera. Radius: " + SEARCH_RADIUS_BLOCKS + " blocks")
+                .formatted(Formatting.GRAY);
+            context.drawTextWithShadow(textRenderer, hint, 10, 44, 0xFFFFFF);
+
+            Text countLine = lastEntityCount == 0
+                ? Text.literal("No other entities in range. Try Refresh or move closer.").formatted(Formatting.YELLOW)
+                : Text.literal("Entities: " + lastEntityCount).formatted(Formatting.GRAY);
+            context.drawTextWithShadow(textRenderer, countLine, 10, 56, 0xFFFFFF);
+        }
+    }
+
+    private final class EntityList extends ElementListWidget<EntityEntry> {
+        private EntityList(MinecraftClient client, int width, int height, int y, int itemHeight) {
+            super(client, width, height, y, itemHeight);
+        }
+
+        void setEntities(List<Entity> entities) {
+            clearEntries();
+            for (Entity e : entities) {
+                addEntry(new EntityEntry(e));
+            }
+        }
+    }
+
+    private final class EntityEntry extends ElementListWidget.Entry<EntityEntry> {
+        private final Entity entity;
+
+        private EntityEntry(Entity entity) {
+            this.entity = entity;
+        }
+
+        @Override
+        public List<? extends net.minecraft.client.gui.Element> children() {
+            return List.of();
+        }
+
+        @Override
+        public List<net.minecraft.client.gui.Selectable> selectableChildren() {
+            return List.of();
+        }
+
+        @Override
+        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+            if (client == null || client.player == null) return;
+
+            double d = Math.sqrt(entity.squaredDistanceTo(client.player));
+            String label = entity.getName().getString() + "  (" + String.format(Locale.ROOT, "%.1f", d) + "m)";
+
+            int textX = x + 6;
+            int textY = y + (entryHeight - textRenderer.fontHeight) / 2;
+
+            context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, hovered ? 0xFFFFAA : 0xFFFFFF);
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (client == null) return false;
+            if (button != 0) return false;
+
+            if (entity.isAlive()) {
+                client.setCameraEntity(entity);
+                close();
+                return true;
+            }
+            return false;
+        }
+    }
+}
